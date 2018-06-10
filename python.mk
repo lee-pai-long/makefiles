@@ -7,11 +7,11 @@ PYTHON_VERSION = $$(cat .python-version)
 
 PY ?= $${$PY:-"3.6.4"}
 
-.PHONY: pyenv
-pyenv: # Install python version manager.
+.PHONY: install-pyenv
+install-pyenv: # Install python version manager.
 
 	@which pyenv \
-	|| (echo -e "$(YELLOW)--- Installing Pyenv ---" \
+	|| (echo "--- Installing Pyenv ---" \
 		&& sudo apt-get install -y \
 			libssl-dev \
 			zlib1g-dev \
@@ -31,7 +31,13 @@ pyenv: # Install python version manager.
 		&& echo 'eval "$(pyenv virtualenv-init -)"' >> $$HOME/.bashrc \
 		&& source $$HOME/.bashrc)
 
+.PHONY: update-pyenv
+update-pyenv: install-pyenv # Update pyenv to get latest versions.
+
+	@cd $(PYENV_ROOT) && git pull
+
+
 .PHONY: python
-python: pyenv # Install python as PY=3.5.2(default to 3.6.4 or from .python-version).
+python: update-pyenv # Install python as PY=3.5.2(default to 3.6.4 or from .python-version).
 
 	@pyenv install -s "$(PY)"
