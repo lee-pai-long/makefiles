@@ -5,22 +5,25 @@
 # Check if VM is running.
 # "The Libvirt domain is not running. Run `vagrant up` to start it."
 
-VAGRANT_STATUS = vagrant status | grep -E 'default.+\srunning' &> /dev/null
-VAGRANT_EXIST  = vagrant status | grep -E 'default.+\snot\screated' &> /dev/null
+# NOTE: $(APP_NAME) must be defined in main Makefile.
+VAGRANT_STATUS = vagrant status | grep -E '$(APP_NAME).+\srunning'
+VAGRANT_EXIST  = vagrant status | grep -E '$(APP_NAME).+\snot\screated'
 
 .PHONY: user
 user: # Force user creation first.
 
 	@$(VAGRANT_EXIST) \
-	&& (APP_ENV=prov vagrant up --no-provision &> /dev/null | true) \
+	&& (vagrant $(APP_NAME) up --no-provision &> /dev/null | true) \
 	&& vagrant ssh -c \
 		'id -u $(APP_NAME) > /dev/null 2>&1 \
-		|| sudo useradd $(APP_NAME) \
+		|| (sudo useradd $(APP_NAME) \
 				--user-group \
 				--groups users \
 				--home-dir $(APP_DIR) \
-				--shell /bin/bash' &> /dev/null \
-	&& vagrant halt &> /dev/null ||:
+				--shell /bin/bash \
+			&& sudo cp -au /etc/skel/. "$(APP_DIR)" \
+			&& sudo chown -R "$(APP_NAME)": "$(APP_DIR)")' \
+	&& vagrant halt ||:
 
 .PHONY: start
 start: user # Start VM.
@@ -32,6 +35,7 @@ stop: # Stop VM.
 
 	@$(VAGRANT_STATUS) && vagrant halt &> /dev/null ||:
 
+# TODO: Update plugin list...
 .PHONY: install
 install: # Install vagrant.
 
